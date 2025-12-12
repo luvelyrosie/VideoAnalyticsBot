@@ -16,6 +16,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - bot_network
 
   bot:
     build: .
@@ -31,6 +33,11 @@ services:
     volumes:
       - ./data:/app/data
       - ./src:/app/src
+    networks:
+      - bot_network
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     command: >
       sh -c "
         echo 'Waiting for database to be ready...' &&
@@ -41,6 +48,10 @@ services:
         python src/bot.py
       "
     restart: unless-stopped
+
+networks:
+  bot_network:
+    driver: bridge
 
 volumes:
   postgres_data:
