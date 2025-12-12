@@ -9,15 +9,25 @@ load_dotenv()
 
 
 def get_database_url():
-    if os.getenv('DOCKER_ENV'):
-        return "postgresql://postgres:postgres123@postgres:5432/video_stats"
-    else:
-        DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
-        DB_NAME = os.getenv("POSTGRES_DB", "video_stats")
-        DB_USER = os.getenv("POSTGRES_USER", "postgres")
-        DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres123")
-        DB_PORT = os.getenv("POSTGRES_PORT", "5432")
-        return f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    """Get database URL - handles ${VARIABLE} expansion"""
+    db_url = os.getenv("DATABASE_URL")
+    
+    if db_url:
+        if "${" in db_url:
+            import re
+            variables = re.findall(r'\$\{([^}]+)\}', db_url)
+            for var in variables:
+                value = os.getenv(var, "")
+                db_url = db_url.replace(f"${{{var}}}", value)
+        return db_url
+    
+    DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
+    DB_NAME = os.getenv("POSTGRES_DB", "video_stats")
+    DB_USER = os.getenv("POSTGRES_USER", "postgres")
+    DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres123")
+    DB_PORT = os.getenv("POSTGRES_PORT", "5432")
+    
+    return f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 
 DATABASE_URL = get_database_url()
