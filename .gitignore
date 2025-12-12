@@ -43,7 +43,7 @@ chroma.sqlite3-wal
 *.msgpack
 *.db
 
-data/*.json
+# data/*.json
 
 *.log
 logs/
