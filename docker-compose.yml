@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: video_stats_db
+    environment:
+      POSTGRES_DB: video_stats
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build: .
+    container_name: video_analytics_bot
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/video_stats
+      HF_TOKEN: ${HF_TOKEN}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      DOCKER_ENV: "true"
+    volumes:
+      - ./data:/app/data
+      - ./src:/app/src
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        sleep 10 &&
+        echo 'Loading data...' &&
+        python src/load_data.py &&
+        echo 'Starting Telegram bot...' &&
+        python src/bot.py
+      "
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
